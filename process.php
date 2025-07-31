@@ -1,115 +1,88 @@
 <?php
+require_once("require/database_connection.php");
+session_start();
 
-    require_once("require/database_connection.php");
-    session_start();
+        // Registration Process
+            if (isset($_REQUEST['submit']) && $_REQUEST['submit'] === "Register") {
 
-    // Registration Process
-    if(isset($_REQUEST['submit']) and $_REQUEST['submit'] === "Register"){
-            
-            if(!empty($_REQUEST["username"]) AND !empty($_REQUEST["password"]) ){
-                $user_name = $_REQUEST["username"];
-                $user_password = $_REQUEST["password"];
-                $user_email =  $_REQUEST['email'];
-                $query = "SELECT * FROM users WHERE email = $user_email ";
-                
-                $result = mysqli_query($connection,$query);
-            
-                if($result === false){
-                    $query = "INSERT INTO users (full_name , email , password) VALUES ('".$user_name."','".$user_email."','".$user_password."')";//insert data for creating account
-                    $result = mysqli_query($connection,$query);
-                    if($result === false){
-                        // Something Went Wrong
-                        header("location: register.php?msg=Account already Exist ..!&color=red");
-                    }else{
-                        // Account Created Successfully
-                        header("location: login.php?msg=Account Created Successfully..!&color=green");
+                if (!empty($_REQUEST["username"]) && !empty($_REQUEST["password"]) && !empty($_REQUEST['email'])) {
+                    $user_name = $_REQUEST["username"];
+                    $user_password = $_REQUEST["password"];
+                    $user_email = $_REQUEST['email'];
 
+                    // Check if email already exists
+                    $check_query = "SELECT * FROM users WHERE email = '$user_email'";
+                    $check_result = mysqli_query($connection, $check_query);
+
+                    if (mysqli_num_rows($check_result) > 0) {
+                        // Account already exists
+                        header("location: register.php?msg=Account already exists..!&color=red");
+                    } else {
+                        // Hash the password
+                        $hashed_password = password_hash($user_password, PASSWORD_DEFAULT);
+
+                        // Insert user with hashed password
+                        $query = "INSERT INTO users (full_name, email, password) VALUES ('$user_name', '$user_email', '$hashed_password')";
+                        $result = mysqli_query($connection, $query);
+
+                        if ($result === false) {
+                            header("location: register.php?msg=Something went wrong..!&color=red");
+                        } else {
+                            header("location: login.php?msg=Account created successfully..!&color=green");
+                        }
                     }
-
-                }else{
-                    //"redirect and account already exist";
-                    header("location: register.php?msg = Something Went Wrong&color=red");
-                }
-            }else{
-                //"redirect fill all columns";
-                    header("location: register.php?msg = fill all columns&color=red");
-
-            }
-    }
-
-    // Login Process
-
-    elseif(isset($_REQUEST["submit"]) and $_REQUEST["submit"] === "Login"){
-                echo "<pre>";
-                print_r($_REQUEST);
-                echo "</pre>";
-                if (!empty($_REQUEST["email"]) && !empty($_REQUEST["password"])) {
-                            $user_email = $_REQUEST["email"];
-                            $user_password = $_REQUEST["password"];
-                            $query = "SELECT * FROM users WHERE email = '" . $user_email . "' AND password = '" . $user_password . "'";
-
-                            $result = mysqli_query($connection,$query);
-                            if(mysqli_num_rows($result) > 0){
-                                $row = mysqli_fetch_assoc($result);
-                                echo "<pre>";
-                                print_r($row);
-                                echo "</pre>";
-                                // checking role id and redirecitng to dashbaords
-                                if($row['role_id'] == 1){
-                                    // redirect users dashboard
-                                    $_SESSION['user'] = $row;
-                                    header("location:user_dashboard.php");
-                                    
-                                }
-                                elseif($row['role_id'] == 2){
-                                    // redirect admin dashboards
-                                    $_SESSION['user'] = $row;
-
-                                    header("location:admin_dashboard.php");
-
-                                    
-                                }
-                        
-                             
-                            }else{
-                                echo "Not found";
-                                header("location: login.php?msg= Invalid Email Or password &color=red");
-                                
-
-                                
-                            }
-                
                 } else {
-                        
-                    header("location: login.php?msg= Fill required data &color=red");
-
-                    // header to login page
+                    header("location: register.php?msg=Please fill all fields&color=red");
                 }
-    }
+            }
 
-    // make user to admin
+        // Login Process
+            elseif (isset($_REQUEST["submit"]) && $_REQUEST["submit"] === "Login") {
+                if (!empty($_REQUEST["email"]) && !empty($_REQUEST["password"])) {
+                    $user_email = $_REQUEST["email"];
+                    $user_password = $_REQUEST["password"];
 
-    elseif(isset($_REQUEST['status']) and $_REQUEST['status'] == "promote"){
-        echo "<pre>";
-        print_r($_REQUEST);
-        echo "</pre>";
-        $user_id = $_REQUEST["user_id"]; 
-        $query = "UPDATE `users` SET `role_id` = 2 WHERE `user_id` = $user_id";
+                    // Fetch user from DB
+                    $query = "SELECT * FROM users WHERE email = '$user_email'";
+                    $result = mysqli_query($connection, $query);
 
-        $result = mysqli_query($connection, $query);
+                    if (mysqli_num_rows($result) > 0) {
+                        $row = mysqli_fetch_assoc($result);
 
-        if ($result) {
-            header("Location: admin_dashboard.php?msg=User+Promoted&color=green");
-        } else {
-            header("Location: admin_dashboard.php?msg=Something+went+wrong&color=red");
-        }
-        exit();
-    }
+                        // Verify the password
+                        if (password_verify($user_password, $row['password'])) {
+                            $_SESSION['user'] = $row;
 
-    
+                            if ($row['role_id'] == 1) {
+                                header("location:user_dashboard.php");
+                            } elseif ($row['role_id'] == 2) {
+                                header("location:admin_dashboard.php");
+                            }
+                        } else {
+                            // Wrong password
+                            header("location: login.php?msg=Invalid Email or Password&color=red");
+                        }
+                    } else {
+                        // Email not found
+                        header("location: login.php?msg=Invalid Email or Password&color=red");
+                    }
+                } else {
+                    header("location: login.php?msg=Please fill all fields&color=red");
+                }
+            }
 
+        // Promote User to Admin
+            elseif (isset($_REQUEST['status']) && $_REQUEST['status'] == "promote") {
+                $user_id = $_REQUEST["user_id"];
+                $query = "UPDATE `users` SET `role_id` = 2 WHERE `user_id` = $user_id";
+                $result = mysqli_query($connection, $query);
 
-
-
+                if ($result) {
+                    header("Location: admin_dashboard.php?msg=User Promoted&color=green");
+                } else {
+                    header("Location: admin_dashboard.php?msg=Something went wrong&color=red");
+                }
+                exit();
+            }
 
 ?>
