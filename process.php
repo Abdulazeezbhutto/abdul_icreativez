@@ -3,12 +3,12 @@ require_once("require/database_connection.php");
 session_start();
 
         // Registration Process
-            if (isset($_REQUEST['submit']) && $_REQUEST['submit'] === "Register") {
+           if (isset($_REQUEST['submit']) && $_REQUEST['submit'] === "Register") {
 
-                if (!empty($_REQUEST["username"]) && !empty($_REQUEST["password"]) && !empty($_REQUEST['email'])) {
+                if (!empty($_REQUEST["username"]) && !empty($_REQUEST["password"]) && !empty($_REQUEST["email"])) {
                     $user_name = $_REQUEST["username"];
                     $user_password = $_REQUEST["password"];
-                    $user_email = $_REQUEST['email'];
+                    $user_email = $_REQUEST["email"];
 
                     // Check if email already exists
                     $check_query = "SELECT * FROM users WHERE email = '$user_email'";
@@ -16,7 +16,7 @@ session_start();
 
                     if (mysqli_num_rows($check_result) > 0) {
                         // Account already exists
-                        header("location: register.php?msg=Account already exists..!&color=red");
+                        header("Location: register.php?msg=Account already exists..!&color=red");
                     } else {
                         // Hash the password
                         $hashed_password = password_hash($user_password, PASSWORD_DEFAULT);
@@ -26,15 +26,16 @@ session_start();
                         $result = mysqli_query($connection, $query);
 
                         if ($result === false) {
-                            header("location: register.php?msg=Something went wrong..!&color=red");
+                            header("Location: register.php?msg=Something went wrong..!&color=red");
                         } else {
-                            header("location: login.php?msg=Account created successfully..!&color=green");
+                            header("Location:login.php?msg=Account created successfully..!&color=green");
                         }
                     }
                 } else {
-                    header("location: register.php?msg=Please fill all fields&color=red");
+                    header("Location:register.php?msg=Please fill all fields&color=red");
                 }
             }
+
 
         // Login Process
             elseif (isset($_REQUEST["submit"]) && $_REQUEST["submit"] === "Login") {
@@ -85,4 +86,5 @@ session_start();
                 exit();
             }
 
+        
 ?>
