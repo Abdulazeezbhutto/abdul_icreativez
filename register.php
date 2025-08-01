@@ -35,7 +35,7 @@
     }
 
     .btn-primary:hover {
-      background-color: #4f46e5;
+      background-color: #2C2F3A !important;
     }
   </style>
 </head>
